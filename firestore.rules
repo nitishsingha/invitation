@@ -181,13 +181,13 @@ service cloud.firestore {
     match /invitations/{invitationId} {
       allow list: if isSignedIn() && existing().userId == request.auth.uid;
       
-allow get: if isValidId(invitationId) && (
-  existing().status == 'published' ||
-  (
-    isSignedIn() &&
-    existing().userId == request.auth.uid
-  )
-);
+      allow get: if isValidId(invitationId) && resource != null && (
+        existing().status == 'published' ||
+        (
+          isSignedIn() &&
+          existing().userId == request.auth.uid
+        )
+      );
 
       allow create: if isValidId(invitationId)
         && isSignedIn()
@@ -245,9 +245,9 @@ allow get: if isValidId(invitationId) && (
     // Token-Gated Public Guest Invites Projection (No PII like phone numbers)
     match /guestInvites/{token} {
       allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
-      allow get: if isValidToken(token) && (
-        (isSignedIn() && existing().ownerId == request.auth.uid) ||
-        existing().isActive == true
+      allow get: if isValidToken(token) && resource != null && (
+        existing().isActive == true ||
+        (isSignedIn() && existing().ownerId == request.auth.uid)
       );
       allow create: if isValidToken(token)
         && isSignedIn()

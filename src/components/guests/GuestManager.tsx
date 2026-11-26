@@ -71,6 +71,29 @@ export function GuestManager({
   const isPrivateDevHost =
     typeof window !== 'undefined' && window.location.hostname.startsWith('ais-dev-');
 
+  const defaultShareOrigin = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const { origin, hostname, protocol, port } = window.location;
+    if (hostname.startsWith('ais-dev-')) {
+      const publicHost = hostname.replace(/^ais-dev-/, 'ais-pre-');
+      return `${protocol}//${publicHost}${port ? `:${port}` : ''}`;
+    }
+    return origin;
+  }, []);
+
+  const [shareOrigin, setShareOrigin] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const saved = window.localStorage.getItem('vellum_public_share_origin')?.trim();
+      if (saved && /^https?:\/\//i.test(saved)) {
+        return saved.replace(/\/+$/, '');
+      }
+    } catch {
+      // Ignore storage restrictions
+    }
+    return defaultShareOrigin;
+  });
+
   const handlePublishNow = async () => {
     if (!onPublishInvitation) return;
     setPublishing(true);
@@ -138,8 +161,10 @@ export function GuestManager({
     );
   }, [rows, searchQuery]);
 
-  const getInviteUrl = (token: string) =>
-    `${window.location.origin}/invite/${token}`;
+  const getInviteUrl = (token: string) => {
+    const base = (shareOrigin || defaultShareOrigin || window.location.origin).replace(/\/+$/, '');
+    return `${base}/?invite=${token}`;
+  };
 
   const handleSaveGuest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -430,8 +455,49 @@ export function GuestManager({
       )}
 
       {isPrivateDevHost && (
-        <div className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-xs text-stone-700">
-          You are viewing a private preview URL (<span className="font-mono">{window.location.hostname}</span>). External guests cannot open links on private preview URLs—share links from your deployed public app URL.
+        <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 space-y-2.5 text-xs text-amber-950">
+          <p className="leading-relaxed">
+            <strong>Important for sharing on other devices:</strong> Links on <span className="font-mono">{window.location.hostname}</span> only open on your own signed-in device. To open on another device, either publish/share this app in AI Studio so <span className="font-mono">ais-pre-…</span> goes live, or paste your deployed Vercel URL below (or open your Vercel URL directly before copying links):
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <input
+              type="url"
+              value={shareOrigin}
+              onChange={(e) => {
+                const val = e.target.value;
+                setShareOrigin(val);
+                try {
+                  const cleaned = val.trim().replace(/\/+$/, '');
+                  if (/^https?:\/\//i.test(cleaned)) {
+                    window.localStorage.setItem('vellum_public_share_origin', cleaned);
+                  } else if (!cleaned) {
+                    window.localStorage.removeItem('vellum_public_share_origin');
+                  }
+                } catch {
+                  // Ignore storage restrictions
+                }
+              }}
+              placeholder={defaultShareOrigin}
+              aria-label="Public share base URL"
+              className="flex-1 px-3 py-1.5 text-xs font-mono bg-white border border-amber-300 rounded-lg text-stone-900 focus:outline-none focus:border-[#8B1E2F]"
+            />
+            {shareOrigin !== defaultShareOrigin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShareOrigin(defaultShareOrigin);
+                  try {
+                    window.localStorage.removeItem('vellum_public_share_origin');
+                  } catch {
+                    // Ignore storage restrictions
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-medium bg-white border border-amber-300 rounded-lg text-amber-950 hover:bg-amber-100 whitespace-nowrap"
+              >
+                Use Shared App URL
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -618,7 +684,7 @@ export function GuestManager({
                         <p className="font-medium text-stone-900">{displayName}</p>
                         <p className="text-xs text-stone-500">
                           {g.phone ? `${g.phone} · ` : ''}
-                          <span className="font-mono">/invite/{g.uniqueToken.slice(0, 12)}…</span>
+                          <span className="font-mono">?invite={g.uniqueToken.slice(0, 12)}…</span>
                         </p>
                       </td>
                       <td className="py-3.5 px-4 text-xs">

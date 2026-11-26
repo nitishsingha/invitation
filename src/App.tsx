@@ -397,7 +397,7 @@ export default function App() {
   }, []);
 
   const navigateToGuestLink = (token: string) => {
-    window.history.pushState({}, '', `/invite/${token}`);
+    window.history.pushState({}, '', `/?invite=${token}`);
     setInviteToken(token);
   };
 
