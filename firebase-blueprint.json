@@ -1,0 +1,343 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated invitation creator profile.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "createdAt", "updatedAt"]
+    },
+    "CustomCategory": {
+      "title": "CustomCategory",
+      "description": "User-defined custom event category.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "pattern": "^[a-z0-9\\-]+$"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "name", "slug", "icon", "isActive", "createdAt"]
+    },
+    "Invitation": {
+      "title": "Invitation",
+      "description": "Full digital invitation owned by a sender.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "categoryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "categorySlug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "themeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "eventTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "eventData": {
+          "type": "object",
+          "description": "Category-specific structured event fields."
+        },
+        "invitationMessage": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "customization": {
+          "type": "object",
+          "description": "Color, font, pattern, music, and display customization."
+        },
+        "settings": {
+          "type": "object",
+          "description": "RSVP, countdown, gallery, location, and QR toggles."
+        },
+        "images": {
+          "type": "array",
+          "description": "Up to 5 optimized gallery photos."
+        },
+        "schedules": {
+          "type": "array",
+          "description": "Up to 15 event functions with dates, times, and locations."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published", "archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "categoryId",
+        "categorySlug",
+        "themeId",
+        "eventTitle",
+        "eventData",
+        "invitationMessage",
+        "customization",
+        "settings",
+        "images",
+        "schedules",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PrivateGuest": {
+      "title": "PrivateGuest",
+      "description": "Sender-private guest record including phone number and token reference.",
+      "type": "object",
+      "properties": {
+        "invitationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "guestName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "uniqueToken": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "isFamilyInvitation": {
+          "type": "boolean"
+        },
+        "customGreeting": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "invitationId",
+        "userId",
+        "guestName",
+        "uniqueToken",
+        "isFamilyInvitation",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GuestInvite": {
+      "title": "GuestInvite",
+      "description": "Token-gated public invitation projection for a specific guest without PII like phone numbers.",
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "invitationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "guestName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "isFamilyInvitation": {
+          "type": "boolean"
+        },
+        "customGreeting": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "invitationSnapshot": {
+          "type": "object",
+          "description": "Read-only sanitized invitation snapshot for receiver rendering."
+        },
+        "rsvpEnabled": {
+          "type": "boolean"
+        },
+        "invitationStatus": {
+          "type": "string",
+          "enum": ["pending", "opened"]
+        },
+        "rsvpStatus": {
+          "type": "string",
+          "enum": ["none", "accepted", "declined", "maybe"]
+        },
+        "rsvpAttendees": {
+          "type": "integer"
+        },
+        "rsvpMessage": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "firstOpenedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "openCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "token",
+        "invitationId",
+        "ownerId",
+        "guestName",
+        "isFamilyInvitation",
+        "isActive",
+        "invitationSnapshot",
+        "rsvpEnabled",
+        "invitationStatus",
+        "rsvpStatus",
+        "rsvpAttendees",
+        "rsvpMessage",
+        "openCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Sender user profile documents keyed by Firebase Auth UID."
+    },
+    "/customCategories/{categoryId}": {
+      "schema": { "$ref": "#/entities/CustomCategory" },
+      "description": "Custom event categories created by authenticated senders."
+    },
+    "/invitations/{invitationId}": {
+      "schema": { "$ref": "#/entities/Invitation" },
+      "description": "Invitations created and managed by authenticated senders."
+    },
+    "/invitations/{invitationId}/guests/{guestId}": {
+      "schema": { "$ref": "#/entities/PrivateGuest" },
+      "description": "Private guest directory containing guest phone numbers and tokens."
+    },
+    "/guestInvites/{token}": {
+      "schema": { "$ref": "#/entities/GuestInvite" },
+      "description": "Token-keyed personalized invitation projection for receivers."
+    }
+  }
+}
