@@ -74,7 +74,32 @@ export function ReceiverInvitationExperience({
   onClosePreview,
 }: ReceiverInvitationExperienceProps) {
   const theme = getThemeById(snapshot.themeId);
-  const { customization, settings, eventData, images, schedules } = snapshot;
+  const customization = snapshot.customization ?? {
+    backgroundColor: theme.palette.background,
+    cardColor: theme.palette.cardSurface,
+    accentColor: theme.palette.accent,
+    textColor: theme.palette.primaryText,
+    fontChoice: theme.fontFamily,
+    pattern: theme.pattern,
+    ornamentStyle: theme.ornamentStyle,
+    floralDecorations: true,
+    reducedParticles: false,
+    musicMood: 'none' as const,
+  };
+  const settings = snapshot.settings ?? {
+    rsvpEnabled: true,
+    countdownEnabled: true,
+    galleryEnabled: true,
+    locationsEnabled: true,
+    qrEnabled: true,
+  };
+  const eventData = snapshot.eventData ?? {
+    eventDate: '',
+    startTime: '',
+    primaryVenue: '',
+  };
+  const images = Array.isArray(snapshot.images) ? snapshot.images : [];
+  const schedules = Array.isArray(snapshot.schedules) ? snapshot.schedules : [];
 
   const bg = customization.backgroundColor || theme.palette.background;
   const cardBg = customization.cardColor || theme.palette.cardSurface;
@@ -1243,7 +1268,7 @@ export function ReceiverInvitationExperience({
                       </p>
                       <p className="text-sm font-medium">
                         {eventData.primaryVenue ||
-                          schedules[0]?.location.venueName ||
+                          schedules[0]?.location?.venueName ||
                           'Venue details below'}
                       </p>
                     </div>

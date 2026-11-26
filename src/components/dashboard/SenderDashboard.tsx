@@ -289,7 +289,11 @@ export function SenderDashboard({
                         setBusyId(null);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-white border border-stone-200 text-stone-800 rounded-lg hover:bg-stone-50 whitespace-nowrap"
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border rounded-lg whitespace-nowrap ${
+                      inv.status === 'published'
+                        ? 'bg-white border-stone-200 text-stone-800 hover:bg-stone-50'
+                        : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                    }`}
                   >
                     <Globe className="w-3.5 h-3.5" />
                     <span>{inv.status === 'published' ? 'Unpublish' : 'Publish'}</span>

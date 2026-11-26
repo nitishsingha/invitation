@@ -238,24 +238,29 @@ export async function updateInvitation(
       updatedAt: serverTimestamp(),
     });
 
-    // Propagate updated snapshot to existing guest invite links
+    // Propagate updated snapshot to existing guest invite links (single-field query avoids composite index errors)
     const guestInvitesQuery = query(
       collection(db, 'guestInvites'),
-      where('ownerId', '==', userId),
-      where('invitationId', '==', invitation.id)
+      where('ownerId', '==', userId)
     );
     const snap = await getDocs(guestInvitesQuery);
-    if (!snap.empty) {
+    const matchingDocs = snap.docs.filter(
+      (d) => (d.data() as { invitationId?: string }).invitationId === invitation.id
+    );
+    if (matchingDocs.length > 0) {
       const snapshot = toSnapshot(updatedRecord);
-      const batch = writeBatch(db);
-      snap.docs.forEach((d) => {
-        batch.update(d.ref, {
-          invitationSnapshot: snapshot,
-          rsvpEnabled: updatedRecord.settings.rsvpEnabled,
-          updatedAt: serverTimestamp(),
+      for (let i = 0; i < matchingDocs.length; i += 450) {
+        const chunk = matchingDocs.slice(i, i + 450);
+        const batch = writeBatch(db);
+        chunk.forEach((d) => {
+          batch.update(d.ref, {
+            invitationSnapshot: snapshot,
+            rsvpEnabled: updatedRecord.settings.rsvpEnabled,
+            updatedAt: serverTimestamp(),
+          });
         });
-      });
-      await batch.commit();
+        await batch.commit();
+      }
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
@@ -287,22 +292,27 @@ export async function duplicateInvitation(
 export async function deleteInvitation(userId: string, invitationId: string): Promise<void> {
   const path = `invitations/${invitationId}`;
   try {
-    const privateGuestsSnap = await getDocs(
-      query(collection(db, `invitations/${invitationId}/guests`), where('userId', '==', userId))
-    );
-    const publicInvitesSnap = await getDocs(
-      query(
-        collection(db, 'guestInvites'),
-        where('ownerId', '==', userId),
-        where('invitationId', '==', invitationId)
-      )
-    );
+    const [privateGuestsSnap, ownerInvitesSnap] = await Promise.all([
+      getDocs(query(collection(db, `invitations/${invitationId}/guests`), where('userId', '==', userId))),
+      getDocs(query(collection(db, 'guestInvites'), where('ownerId', '==', userId))),
+    ]);
 
-    const batch = writeBatch(db);
-    privateGuestsSnap.docs.forEach((d) => batch.delete(d.ref));
-    publicInvitesSnap.docs.forEach((d) => batch.delete(d.ref));
-    batch.delete(doc(db, 'invitations', invitationId));
-    await batch.commit();
+    const matchingPublicRefs = ownerInvitesSnap.docs
+      .filter((d) => (d.data() as { invitationId?: string }).invitationId === invitationId)
+      .map((d) => d.ref);
+
+    const allRefsToDelete = [
+      ...privateGuestsSnap.docs.map((d) => d.ref),
+      ...matchingPublicRefs,
+      doc(db, 'invitations', invitationId),
+    ];
+
+    for (let i = 0; i < allRefsToDelete.length; i += 450) {
+      const chunk = allRefsToDelete.slice(i, i + 450);
+      const batch = writeBatch(db);
+      chunk.forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -316,19 +326,15 @@ export async function fetchGuestsForInvitation(
   try {
     const [privateSnap, inviteSnap] = await Promise.all([
       getDocs(query(collection(db, privatePath), where('userId', '==', userId))),
-      getDocs(
-        query(
-          collection(db, 'guestInvites'),
-          where('ownerId', '==', userId),
-          where('invitationId', '==', invitationId)
-        )
-      ),
+      getDocs(query(collection(db, 'guestInvites'), where('ownerId', '==', userId))),
     ]);
 
     const inviteMap: Record<string, GuestInviteRecord> = {};
     inviteSnap.docs.forEach((d) => {
       const data = d.data() as GuestInviteRecord;
-      inviteMap[data.token] = data;
+      if (data.invitationId === invitationId) {
+        inviteMap[data.token] = data;
+      }
     });
 
     return privateSnap.docs.map((d) => {
@@ -592,9 +598,13 @@ export async function deleteGuestFromInvitation(
 }
 
 export async function fetchGuestInviteByToken(token: string): Promise<GuestInviteRecord | null> {
-  const path = `guestInvites/${token}`;
+  const cleanToken = token.trim();
+  if (!/^[a-zA-Z0-9_-]{16,64}$/.test(cleanToken)) {
+    return null;
+  }
+  const path = `guestInvites/${cleanToken}`;
   try {
-    const snap = await getDoc(doc(db, 'guestInvites', token));
+    const snap = await getDoc(doc(db, 'guestInvites', cleanToken));
     if (!snap.exists()) return null;
     return snap.data() as GuestInviteRecord;
   } catch (error) {

@@ -26,14 +26,19 @@ import type {
 } from './types/invitation';
 
 function extractInviteTokenFromLocation(): string | null {
-  const pathMatch = window.location.pathname.match(/^\/invite\/([A-Za-z0-9_-]{8,120})\/?$/);
+  const pathMatch = window.location.pathname.match(/^\/invite\/([A-Za-z0-9_-]{8,120})/);
   if (pathMatch) {
     return pathMatch[1];
   }
   const params = new URLSearchParams(window.location.search);
-  const queryToken = params.get('invite');
-  if (queryToken && /^[A-Za-z0-9_-]{8,120}$/.test(queryToken)) {
-    return queryToken;
+  const queryToken = params.get('invite')?.trim();
+  if (queryToken) {
+    const cleanQuery = queryToken.match(/^([A-Za-z0-9_-]{8,120})/);
+    if (cleanQuery) return cleanQuery[1];
+  }
+  const hashMatch = window.location.hash.match(/#\/?invite\/([A-Za-z0-9_-]{8,120})/);
+  if (hashMatch) {
+    return hashMatch[1];
   }
   return null;
 }
@@ -351,6 +356,17 @@ function AuthenticatedWorkspace({
                 setView('dashboard');
               }}
               onOpenGuestLink={onOpenGuestLink}
+              onPublishInvitation={async () => {
+                const updated: InvitationRecord = {
+                  ...activeGuestInvitation,
+                  status: 'published',
+                };
+                await updateInvitation(user.uid, updated);
+                setActiveGuestInvitation(updated);
+                setInvitations((prev) =>
+                  prev.map((item) => (item.id === updated.id ? updated : item))
+                );
+              }}
             />
           )}
         </>

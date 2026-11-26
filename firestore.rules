@@ -180,7 +180,15 @@ service cloud.firestore {
     // Invitations Collection + Private Guests Subcollection
     match /invitations/{invitationId} {
       allow list: if isSignedIn() && existing().userId == request.auth.uid;
-      allow get: if isValidId(invitationId) && isSignedIn() && existing().userId == request.auth.uid;
+      
+allow get: if isValidId(invitationId) && (
+  existing().status == 'published' ||
+  (
+    isSignedIn() &&
+    existing().userId == request.auth.uid
+  )
+);
+
       allow create: if isValidId(invitationId)
         && isSignedIn()
         && isValidInvitation(incoming())

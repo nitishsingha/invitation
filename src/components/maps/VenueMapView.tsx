@@ -110,9 +110,10 @@ export function VenueMapView({
 }: VenueMapViewProps) {
   const validSchedules = schedules.filter(
     (s) =>
-      s.location.venueName ||
-      s.location.fullAddress ||
-      (s.location.latitude !== null && s.location.longitude !== null)
+      s?.location &&
+      (s.location.venueName ||
+        s.location.fullAddress ||
+        (s.location.latitude !== null && s.location.longitude !== null))
   );
 
   const [selectedId, setSelectedId] = useState<string>(validSchedules[0]?.id || '');

@@ -15,6 +15,7 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
   const [loading, setLoading] = useState(true);
   const [invite, setInvite] = useState<GuestInviteRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const recordedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
         }
         setInvite(data);
         if (
-          data.invitationSnapshot.status === 'published' &&
+          data.invitationSnapshot?.status === 'published' &&
           recordedTokenRef.current !== data.token
         ) {
           recordedTokenRef.current = data.token;
@@ -41,9 +42,10 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
           }
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Failed to load invitation link:', err);
         if (!cancelled) {
-          setError('Unable to open this invitation right now. Please try again shortly.');
+          setError('Unable to open this invitation right now. Please check your internet connection and try again.');
         }
       })
       .finally(() => {
@@ -55,7 +57,7 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, retryCount]);
 
   if (loading) {
     return (
@@ -76,13 +78,22 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
             Could Not Load Invitation
           </h1>
           <p className="text-sm text-stone-600">{error}</p>
-          <button
-            type="button"
-            onClick={onBackHome}
-            className="px-5 py-2.5 text-xs font-medium bg-[#8B1E2F] text-white rounded-lg hover:bg-[#741827]"
-          >
-            Return to Vellum
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setRetryCount((c) => c + 1)}
+              className="px-5 py-2.5 text-xs font-medium bg-[#8B1E2F] text-white rounded-lg hover:bg-[#741827]"
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              onClick={onBackHome}
+              className="px-5 py-2.5 text-xs font-medium bg-stone-100 text-stone-800 rounded-lg hover:bg-stone-200"
+            >
+              Return to Vellum
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -110,7 +121,7 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
     );
   }
 
-  if (invite.invitationSnapshot.status !== 'published') {
+  if (invite.invitationSnapshot?.status !== 'published') {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white border border-stone-200 rounded-2xl p-8 text-center space-y-4">
@@ -118,15 +129,24 @@ export function InviteRouteView({ token, onBackHome }: InviteRouteViewProps) {
             Invitation Temporarily Paused
           </h1>
           <p className="text-sm text-stone-600 leading-relaxed">
-            The host is currently updating details for &ldquo;{invite.invitationSnapshot.eventTitle}&rdquo;. Please check back soon.
+            The host is currently updating details for &ldquo;{invite.invitationSnapshot?.eventTitle || 'this celebration'}&rdquo;. Please check back soon.
           </p>
-          <button
-            type="button"
-            onClick={onBackHome}
-            className="px-5 py-2.5 text-xs font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800"
-          >
-            Visit Vellum
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setRetryCount((c) => c + 1)}
+              className="px-5 py-2.5 text-xs font-medium bg-[#8B1E2F] text-white rounded-lg hover:bg-[#741827]"
+            >
+              Refresh Invitation
+            </button>
+            <button
+              type="button"
+              onClick={onBackHome}
+              className="px-5 py-2.5 text-xs font-medium bg-stone-100 text-stone-800 rounded-lg hover:bg-stone-200"
+            >
+              Visit Vellum
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
+  AlertTriangle,
   ArrowLeft,
   Check,
   Copy,
   Download,
   ExternalLink,
+  Globe,
   MessageCircle,
   Pencil,
   Power,
@@ -38,6 +40,7 @@ interface GuestManagerProps {
   invitation: InvitationRecord;
   onBack: () => void;
   onOpenGuestLink: (token: string) => void;
+  onPublishInvitation?: () => Promise<void>;
 }
 
 export function GuestManager({
@@ -45,6 +48,7 @@ export function GuestManager({
   invitation,
   onBack,
   onOpenGuestLink,
+  onPublishInvitation,
 }: GuestManagerProps) {
   const [rows, setRows] = useState<CombinedGuestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +65,25 @@ export function GuestManager({
 
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [qrTarget, setQrTarget] = useState<CombinedGuestRow | null>(null);
+  const [publishing, setPublishing] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  const isPrivateDevHost =
+    typeof window !== 'undefined' && window.location.hostname.startsWith('ais-dev-');
+
+  const handlePublishNow = async () => {
+    if (!onPublishInvitation) return;
+    setPublishing(true);
+    setError(null);
+    try {
+      await onPublishInvitation();
+      await loadGuests();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to publish invitation.');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const loadGuests = async () => {
     setLoading(true);
@@ -379,6 +401,39 @@ export function GuestManager({
           )}
         </div>
       </div>
+
+      {invitation.status !== 'published' && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-amber-950">
+                This invitation is currently a Draft
+              </p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Receivers opening shared links will see &ldquo;Invitation Temporarily Paused&rdquo; until you publish it. Publish now to activate all existing and new guest links.
+              </p>
+            </div>
+          </div>
+          {onPublishInvitation && (
+            <button
+              type="button"
+              disabled={publishing}
+              onClick={() => void handlePublishNow()}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-[#8B1E2F] text-white rounded-lg hover:bg-[#741827] disabled:opacity-50 whitespace-nowrap shrink-0"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{publishing ? 'Publishing...' : 'Publish Invitation Now'}</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {isPrivateDevHost && (
+        <div className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-xs text-stone-700">
+          You are viewing a private preview URL (<span className="font-mono">{window.location.hostname}</span>). External guests cannot open links on private preview URLs—share links from your deployed public app URL.
+        </div>
+      )}
 
       {/* Analytics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
