@@ -83,13 +83,15 @@ export function GuestManager({
 
   const [shareOrigin, setShareOrigin] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
-    try {
-      const saved = window.localStorage.getItem('vellum_public_share_origin')?.trim();
-      if (saved && /^https?:\/\//i.test(saved)) {
-        return saved.replace(/\/+$/, '');
+    if (isPrivateDevHost) {
+      try {
+        const saved = window.localStorage.getItem('vellum_public_share_origin')?.trim();
+        if (saved && /^https?:\/\//i.test(saved)) {
+          return saved.replace(/\/+$/, '');
+        }
+      } catch {
+        // Ignore storage restrictions
       }
-    } catch {
-      // Ignore storage restrictions
     }
     return defaultShareOrigin;
   });
