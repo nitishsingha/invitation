@@ -90,7 +90,7 @@ export function SenderDashboard({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-semibold text-stone-900">
-            Invitation Studio
+            Invitation
           </h1>
           <p className="text-sm text-stone-600 mt-1">
             Manage your interactive invitations, personalized guest links, and RSVP responses.
